@@ -8,7 +8,7 @@ int led1, //alle må kobles til en pin. Udefinert per nå
 int led2,
 int led3,
 int led4,
-int led5,
+int led5,ttttttt
 int led6,
 int led7,
 int led8,
