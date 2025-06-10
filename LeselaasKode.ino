@@ -1,11 +1,9 @@
-//Koden per nå, skal prøve å ordne github straks:
 int tidIgjen = 0;
 int valgtTid = 0;  //60, 45, 30 eller 15 min
  
 //alle ledlysene;
  
 // const int ledPins[12]= {
-// //alle må kobles til en pin. Udefinert per nå
 const int led2 = 2; 
 const int led3 = 3;
 const int led4 = 4;
@@ -27,6 +25,14 @@ const int button45 = A2;
 const int button60 = A3;
 const int buttonPause = A4;
 const int buttonPluss = A5;
+
+//her er tilsvarende noters frekvenser, som høytaler skal spille
+int C = 261;
+int D = 293;
+int F = 349;
+int E = 330;
+int G = 392;
+int A = 440;
  
  
 void setup() {
@@ -84,7 +90,7 @@ void loop() {
     leggTilTid(300000);
     delay(200);
   } else if (digitalRead(buttonPause) == LOW) {
-    pause(300000);
+    pause();
   }
  
   for (tidIgjen; tidIgjen > 0; tidIgjen--){
@@ -100,7 +106,8 @@ tidIgjen += input;
 }
  
 void pause(){
-  delay(300000);  //5min pause
+ 
+ delay(300000);  //5min pause
 }
  
  
@@ -115,6 +122,9 @@ void lysLeds(){
         }
     }
 }
+
+
+
  
  
 void lysStartogSlutt(){
@@ -127,6 +137,20 @@ void lysStartogSlutt(){
     }
  
 }
+
+
+void victoryFanfare() {
+  int melody[] = {A, A, A, A, F, G, A, G, A};
+  int noteDurations[] = {200, 200, 200, 700, 700, 700, 400, 200, 1500};
+
+  for (int i = 0; i < 9; i++) {
+    tone(piezoPin, melody[i], noteDurations[i]);
+    delay(noteDurations[i] + 20);
+  }
+  noTone(piezoPin);  // for at buzzer og annen lyd skal stoppe
+}
+
+void marioJump(){}
  
  
 // x antall ledlys
