@@ -59,21 +59,25 @@ void loop() {
     valgtTid = 15; //setter valgte tiden lik dette. Variabel trengs når tiden igjen og valgt tid skal sammenlignes senere
     leggTilTid(15);
     delay(200); // Kort pause for å unngå å registrere samme trykk flere ganger
+    StartogSlutt();
   } else if (digitalRead(button30) == LOW) {
     tidIgjen = 0;
     valgtTid = 30;
     leggTilTid(30);
     delay(200);
+    StartogSlutt();
   } else if (digitalRead(button45) == LOW) {
     tidIgjen = 0;
     valgtTid = 45;
     leggTilTid(45);
     delay(200);
+    StartogSlutt();
   } else if (digitalRead(button60) == LOW) {
     tidIgjen = 0;
     valgtTid = 60;
     leggTilTid(60);
     delay(200);
+    StartogSlutt();
   } else if (digitalRead(buttonPluss) == LOW) {
     leggTilTid(5);
     delay(200);
@@ -111,7 +115,7 @@ void lysLeds(){
 }
 
 
-void lysStartogSlutt(){
+void StartogSlutt(){
   for (int i = 0; i < 12; i++) {
     digitalWrite(ledPins[i], HIGH);  // Slår på LED
     if (i != 1){
@@ -121,6 +125,8 @@ void lysStartogSlutt(){
     }
 
 }
+
+  
 
 
 // x antall ledlys
