@@ -35,13 +35,7 @@ int G = 392;
 int A = 440;
  
 //greier for sensoren
-const int trigPin = 10;
-const int echoPin = 11;
-const int distance;  //bestem en default avstand
 
-
-unsigned long sistBevegelse = 0;  //kan også bruke vanlig long, men unsigned ignorerer negative tall som er nice
-const unsigned long femtenMin = 900000 
 
 
 
