@@ -34,7 +34,17 @@ int E = 330;
 int G = 392;
 int A = 440;
  
- 
+//greier for sensoren
+const int trigPin = 10;
+const int echoPin = 11;
+const int distance;  //bestem en default avstand
+
+
+unsigned long sistBevegelse = 0;  //kan også bruke vanlig long, men unsigned ignorerer negative tall som er nice
+const unsigned long femtenMin = 900000 
+
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -51,6 +61,10 @@ void setup() {
   pinMode(led12, OUTPUT);
   pinMode(led13, OUTPUT);
 
+  pinMode(trigPin, OUTPPUT);
+  pinMode(echoPin, INPUT);
+  sistBevegelse = milis();  //begynner å telle 
+
  
   pinMode(button15, INPUT_PULLUP);
   pinMode(button30, INPUT_PULLUP);
@@ -60,6 +74,7 @@ void setup() {
   pinMode(buttonPluss, INPUT_PULLUP);
  
   lysLeds();
+  
  
 }
  
