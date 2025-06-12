@@ -150,7 +150,7 @@ int greie = 1;
     delay(60000);
     Serial.print("Tid igjen: ");
     Serial.println(tidIgjenMin);
-  }
+  } elif (valgtTidMin != 0 && tidIgjenMin == 0){
   ferdig();
   }
 
