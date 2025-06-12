@@ -166,7 +166,8 @@ int greie = 1;
 
 
 void knappTrykket(int min){ //registrerer trykkene
-  Serial.println(min + " minutter valgt");
+  Serial.print(min);
+  Serial.println(" minutter valgt");
     tidIgjen = min*60*1000;
     valgtTid = min*60*1000;
     leggTilTid(min);
