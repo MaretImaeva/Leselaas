@@ -1,7 +1,8 @@
 long tidIgjen = 0;
 long valgtTid = 0;  //60, 45, 30 eller 15 min
+int tidIgjenMin = 0;
+int valgtTidMin = 0;
 
-const int led2 = 2;
 const int led3 = 3;
 const int led4 = 4;
 const int led5 = 5;
@@ -14,19 +15,51 @@ const int led11 = 11;
 const int led12 = 12;
 
 const int ledPins[] = {
-  led2, led3, led4, led5, led6, led7, led8, led9, led10, led11, led12
-};
+  led3, led4, led5, led6, led7, led8, led9, led10, led11, led12
+}; //går inn i digital pins fra 3 til og med 12
 
 const int hoytaler = 13;
 
+const int sensor = 2;
+unsigned long lastMotionTime = 0;
+const unsigned long timeout = 15 * 60 * 1000; // 15 minutter i millisekunder
+
+
 boolean laas = false;
 
+//-------------------------------------- knapper:
 const int button15 = A0;
 const int button30 = A1;
 const int button45 = A2;
 const int button60 = A3;
 const int buttonPause = A4;
 const int buttonPluss = A5;
+
+const int debounceDelay = 50;
+unsigned long lastDebounceTime[6] = {0};
+bool lastButtonState[6] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH};
+bool buttonPressed[6] = {false, false, false, false, false, false};
+const int buttonPins[] = {A0, A1, A2, A3, A4, A5}; // 15, 30, 45, 60, Pause, Pluss
+
+bool debounce(int index) {
+  int reading = digitalRead(buttonPins[index]);
+  if (reading != lastButtonState[index]) {
+    lastDebounceTime[index] = millis();
+  }
+  if ((millis() - lastDebounceTime[index]) > debounceDelay) {
+    if (reading == LOW && !buttonPressed[index]) {
+      buttonPressed[index] = true;
+      lastButtonState[index] = reading;
+      return true; // Trykk oppdaget
+    } else if (reading == HIGH) {
+      buttonPressed[index] = false;
+    }
+  }
+  lastButtonState[index] = reading;
+  return false;
+}
+
+//---------------------------------- noter:
 
 
 // noter
@@ -44,16 +77,22 @@ int As4 = 466;
 int B4  = 493;
 int C5  = 523;
 
+
 unsigned long lastMinutt = 0;
 int sisteLed = -1;
+
+
+
 
 void setup() {
   
   Serial.begin(9600);
 
-  for (int i = 0; i < 11; i++) {
-    pinMode(ledPins[i], OUTPUT);
+  int antallLys = 10;
+  for (int i = 0; i < antallLys; i++) {
+  pinMode(ledPins[i], OUTPUT);
   }
+
 
   pinMode(hoytaler, OUTPUT);
 
@@ -68,57 +107,74 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(button15) == LOW) {
-    knappTrykket(1);
-  } else if (digitalRead(button30) == LOW) {
-    knappTrykket(3);
-  } else if (digitalRead(button45) == LOW) {
-    knappTrykket(45);
-  } else if (digitalRead(button60) == LOW) {
-    knappTrykket(60);
-  } else if (digitalRead(buttonPluss) == LOW) {
-    Serial.println("5 min lagt til");
-    leggTilTid(5);
-    delay(200);
-  } else if (digitalRead(buttonPause) == LOW) {
-    Serial.println("Pause aktivert");
-    pause();
-  }
+if (debounce(0)) {
+  knappTrykket(1);
+}
+else if (debounce(1)) {
+  knappTrykket(3);
+}
+else if (debounce(2)) {
+  knappTrykket(45);
+}
+else if (debounce(3)) {
+  knappTrykket(60);
+}
+else if (debounce(4)) {
+  Serial.println("Pause aktivert");
+  pause();
+}
+else if (debounce(5)) {
+  Serial.println("5 min lagt til");
+  leggTilTid(5);
+}
 
+int greie = 1;
   // Trekker tid hvert minutt uten å fryse loop
-  if (tidIgjen > 0 && millis() - lastMinutt >= 60000) {
+  if (greie == 101){//(tidIgjen > 0 && millis() - lastMinutt >= 60000) {
     tidIgjen -= 60000;
     lastMinutt = millis();
     Serial.print("Tid igjen: ");
     Serial.println((tidIgjen / 60000.0, 2));
     Serial.println("Valgt tid:");
-    Serial.println(valgtTid / 60000.0, 2);
+    Serial.println((valgtTid / 60000.0, 2));
     lysLeds();
     if (tidIgjen <= 0) {
       Serial.println("Tid ferdig");
       ferdig();
     }
   }
+
+  if (valgtTidMin > 0 && tidIgjenMin > 0) {
+  for (; tidIgjenMin > 0; tidIgjenMin--) {
+    delay(60000);
+    Serial.print("Tid igjen: ");
+    Serial.println(tidIgjenMin);
+  }
+  ferdig();
+  }
+
   
   lysLeds(); //oppdaterer lysene hver gang
 
   // Sjekker og teller sist bevegelse:
-  //int bevegelse = digitalRead(sensor);
+  int bevegelse = digitalRead(sensor);
 
-  //sjekkBevegelse();
- 
-
+  sjekkBevegelse();
 
 }
 
+
 void knappTrykket(int min){ //registrerer trykkene
   Serial.println(min + " minutter valgt");
-    tidIgjen = 0;
+    tidIgjen = min*60*1000;
     valgtTid = min*60*1000;
     leggTilTid(min);
     delay(200);
     laas = true;
-    lysStartogSlutt();
+    lysStart();
+    valgtTidMin = min;
+    tidIgjenMin = min;
+
 }
 
 
@@ -129,6 +185,7 @@ void leggTilTid(int inputMin) {
   tidIgjen += minutter;
   Serial.print("Tid som gjenstår (min): ");
   Serial.println((float)tidIgjen / 60000.0, 2);
+  tidIgjenMin += 5;
 }
 
 
@@ -143,50 +200,60 @@ void pause() {
 
 
 void ferdig() {
-  for (int i = 0; i < 11; i++) {
-    digitalWrite(ledPins[i], LOW);}
-  Serial.println("Fullført! Starter avslutningseffekter.");
-  lysStartogSlutt();
+  int antallLys = 10; //gir variabel i tilfelle jeg bytter antall LEDS og ikke må endre hvert sted i koden
+
+  for (int i = 0; i < antallLys; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+
+  Serial.println("Intervallet ferdig! Starter avslutningseffekter");
+  
+  for (int i = 0; i < antallLys; i++) {
+    digitalWrite(ledPins[i], HIGH);
+  }
+  delay(1000);
+  
+  for (int i = 0; i < antallLys; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+
   victoryFanfare();
   laas = false;
 
+  valgtTidMin = 0;
+  tidIgjenMin = 0;
+  tidIgjen = 0;
+  valgtTid = 0;
+
 }
+
 
 void lysLeds() {
-
-
   if (valgtTid == 0) return;
 
-  int lysSomSkalLyse = (valgtTid - tidIgjen) + 1;
+  int antallLys = 10;
 
-  for (int detteLed = 2; detteLed < 13; detteLed++){
-    if (detteLed < lysSomSkalLyse){
-      digitalWrite(ledPins[detteLed], HIGH);
+  // Hvor stor andel av tiden har gått?
+
+  int lysSomSkalLyse = (valgtTidMin-tidIgjenMin)*10/valgtTidMin;
+
+  for (int i = 0; i < antallLys; i++) {
+    if (i < lysSomSkalLyse) {
+      digitalWrite(ledPins[i], HIGH);
     } else {
-      digitalWrite(ledPins[detteLed], LOW);
+      digitalWrite(ledPins[i], LOW);
     }
-
   }
 }
 
 
-void lysStartogSlutt() {
+
+
+void lysStart() {
+  int antallLys = 10;
 
   // Fremover
-  for (int i = 0; i < 11; i++) {
-    digitalWrite(ledPins[i], HIGH);
-    if (sisteLed != 11) {
-      digitalWrite(ledPins[sisteLed], LOW);
-    }
-    sisteLed = i;
-    delay(100);
-  }
-
-  // Viktig: nullstill sisteLed
-  sisteLed = -1;
-
-  // Bakover
-  for (int i = 10; i >= 0; i--) {
+  for (int i = 0; i < antallLys; i++) {
     digitalWrite(ledPins[i], HIGH);
     if (sisteLed != -1) {
       digitalWrite(ledPins[sisteLed], LOW);
@@ -195,15 +262,24 @@ void lysStartogSlutt() {
     delay(100);
   }
 
-  // Slå av alle LED etterpå
-  for (int i = 0; i < 11; i++) {
+  // Bakover
+  for (int i = antallLys - 1; i >= 0; i--) {
+    digitalWrite(ledPins[i], HIGH);
+    if (sisteLed != -1) {
+      digitalWrite(ledPins[sisteLed], LOW);
+    }
+    sisteLed = i;
+    delay(100);
+  }
+
+  // Slå av alle
+  for (int i = 0; i < antallLys; i++) {
     digitalWrite(ledPins[i], LOW);
   }
 
+  sisteLed = -1;
   Serial.println("Skulle gått en runde her");
 }
-
-
 
 
 
@@ -226,6 +302,7 @@ void lyd() {
   Serial.println("enkel lyd ferdig");
 }
 
+
 void failedLyd() {
   int melody[] = {G4, G4, G4, Ds4};
   int noteDurations[] = {200, 200, 200, 600};
@@ -235,9 +312,9 @@ void failedLyd() {
     delay(noteDurations[i] + 20);
   }
   noTone(hoytaler);
-  Serial.println("dun dun dun duuuun");
-  
+  Serial.println("dun dun dun duuuun"); 
 }
+
 
 void failedLys(){
     int fadeLeds[] = {3, 5, 6, 9, 10, 11};
@@ -266,41 +343,25 @@ void failedLys(){
 }
 
 
-//sjekkBevegelse(){
-//    if (motion == HIGH) {
-//    Serial.println("Bevegelse oppdaget!");
-//    lastMotionTime = millis();  // Oppdater siste aktivitet
-//  } else {
-//    // Sjekk hvor lenge det har vært stille
-//    if (millis() - lastMotionTime >= timeout) {
-//      Serial.println("Ingen bevegelse på 15 minutter.");
-//      tidIgjen = valgtTid;
-//      failedLyd();
-//      digitalWrite
-//    }
-//  }
+void sjekkBevegelse(){
+  int bevegelse = digitalRead(sensor);  // leser sensoren
 
+  if (bevegelse == HIGH) {
+    Serial.println("Bevegelse oppdaget!");
+    lastMotionTime = millis();  // oppdater siste tid bevegelse
+  } else {
+    // sjekk om det har gått 15 minutter uten bevegelse
+    if (millis() - lastMotionTime >= timeout) {
+      Serial.println("Ingen bevegelse på 15 minutter.");
+      tidIgjen = valgtTid;   // tilbakestill tiden
+      failedLyd();
+      failedLys();
+      lastMotionTime = millis();  // nullstill igjen etter reaksjon
+    }
+  }
 
-
-
-
-
-//sjekkBevegelse(){
-//    if (motion == HIGH) {
-//    Serial.println("Bevegelse oppdaget!");
-//    lastMotionTime = millis();  // Oppdater siste aktivitet
-//  } else {
-//    // Sjekk hvor lenge det har vært stille
-//    if (millis() - lastMotionTime >= timeout) {
-//      Serial.println("Ingen bevegelse på 15 minutter.");
-//      tidIgjen = valgtTid;
-//      failedLyd();
-//      digitalWrite
-//    }
-//  }
-
-//  delay(1000); // Sjekk hvert sekund
-//}
+  delay(1000);  // sjekk hvert sekund
+}
 
 
 
