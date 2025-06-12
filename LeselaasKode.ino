@@ -104,6 +104,7 @@ void setup() {
   pinMode(buttonPause, INPUT_PULLUP);
   pinMode(buttonPluss, INPUT_PULLUP);
 
+
 }
 
 void loop() {
@@ -145,7 +146,7 @@ int greie = 1;
   }
 
   if (valgtTidMin > 0 && tidIgjenMin > 0) {
-  for (; tidIgjenMin > 0; tidIgjenMin--) {
+  for (tidIgjenMin > 0; tidIgjenMin--) {
     delay(60000);
     Serial.print("Tid igjen: ");
     Serial.println(tidIgjenMin);
