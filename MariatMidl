@@ -1,9 +1,9 @@
-//MariatFil
-
 long tidIgjen = 0;
 long valgtTid = 0;  //60, 45, 30 eller 15 min
 int tidIgjenMin = 0;
 int valgtTidMin = 0;
+int tid_siden_start = 0; //sekunder
+int antallLeds = 10;
  
 const int led3 = 3;
 const int led4 = 4;
@@ -39,35 +39,9 @@ const int buttonPluss = A5;
  
  
 bool erFerdig= false;
- 
-const int debounceDelay = 50;
-unsigned long lastDebounceTime[6] = {0};
-bool lastButtonState[6] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH};
-bool buttonPressed[6] = {false, false, false, false, false, false};
-const int buttonPins[] = {A0, A1, A2, A3, A4, A5}; // 15, 30, 45, 60, Pause, Pluss
- 
-bool debounce(int index) {
-  int reading = digitalRead(buttonPins[index]);
-  if (reading != lastButtonState[index]) {
-    lastDebounceTime[index] = millis();
-  }
-  if ((millis() - lastDebounceTime[index]) > debounceDelay) {
-    if (reading == LOW && !buttonPressed[index]) {
-      buttonPressed[index] = true;
-      lastButtonState[index] = reading;
-      return true; // Trykk oppdaget
-    } else if (reading == HIGH) {
-      buttonPressed[index] = false;
-    }
-  }
-  lastButtonState[index] = reading;
-  return false;
-}
- 
+
 //---------------------------------- noter:
- 
- 
-// noter
+
 int C4  = 261;
 int Cs4 = 277;
 int D4  = 293;
@@ -108,65 +82,59 @@ void setup() {
   pinMode(button60, INPUT_PULLUP);
   pinMode(buttonPause, INPUT_PULLUP);
   pinMode(buttonPluss, INPUT_PULLUP);
+
+  failedLyd();
+  failedLys();
  
 }
  
 void loop() {
-if (debounce(0)) {
-  knappTrykket(2);
+if (!digitalRead(A0)) {
+  knappTrykket(15);
 }
-else if (debounce(1)) {
-  knappTrykket(4);
+else if (!digitalRead(A1)){
+  knappTrykket(30);
 }
-else if (debounce(2)) {
-  knappTrykket(45);
-}
-else if (debounce(3)) {
-  knappTrykket(60);
-}
-else if (debounce(4)) {
+else if (!digitalRead(A2)){
   Serial.println("Pause aktivert");
   pause();
 }
-else if (debounce(5)) {
+else if (!digitalRead(A3)){
   Serial.println("5 min lagt til");
   leggTilTid(5);
 }
+else if (!digitalRead(A4)) {
+  knappTrykket(45);
+}
  
-  if (tidIgjen > 0 && millis() - lastMinutt >= 60000) {
+  if (tidIgjen > 0 && millis() - lastMinutt >= 60000) { //
     tidIgjen -= 60000;
     lastMinutt = millis();
     Serial.print("Tid igjen: ");
     Serial.println((tidIgjen / 60000.0, 2));
-    Serial.println("Valgt tid:");
-    Serial.println((valgtTid / 60000.0, 2));
-    lysLeds();
-    if (tidIgjen <= 0 && valgtTid > 0) {
+    if (tidIgjenMin <= 0 && valgtTidMin > 0) {
       Serial.println("Registrert ferdig fra loop");
       ferdig();
     }
     tidIgjenMin--;
+    tid_siden_start++;
   }
- 
-  // if (valgtTidMin > 0 && tidIgjenMin > 0) {
-  // for (; tidIgjenMin > 0; tidIgjenMin--) {
-  //   delay(60000);
-  //   Serial.print("Tid igjen: ");
-  //   Serial.println(tidIgjenMin);
-  // }
-  // ferdig();
-  // }
- 
-  // Trekker tid hvert minutt uten å fryse loop
- 
- 
-  lysLeds(); //oppdaterer lysene hver gang
+
+  
+  //lysLeds(); //oppdaterer lysene hver gang
+
+  int antallLysLeds = map(tid_siden_start, 0, valgtTid, 0, antallLeds);
+  if (antallLeds != 0){
+    digitalWrite(ledPins[antallLysLeds - 1], HIGH);
+  }
+
+
  
   // Sjekker og teller sist bevegelse:
-  // int bevegelse = digitalRead(sensor);
+  int bevegelse = digitalRead(sensor);
  
-  // sjekkBevegelse();
- 
+  sjekkBevegelse();
+  delay(10);
 }
  
  
@@ -175,7 +143,6 @@ void knappTrykket(int min){ //registrerer trykkene
   Serial.println(" minutter valgt");
     tidIgjen = min*60*1000;
     valgtTid = min*60*1000;
-    leggTilTid(min);
     delay(200);
     laas = true;
     lysStart();
@@ -221,7 +188,7 @@ void ferdig(){
   for (int i = 0; i < 10; i++) digitalWrite(ledPins[i], LOW);
  
   victoryFanfare();
-laas = false;
+  laas = false;
   valgtTid = tidIgjen = valgtTidMin = tidIgjenMin = 0;
 }
  
@@ -236,23 +203,22 @@ laas = false;
  
  
  
-void lysLeds() {
-  if (valgtTid == 0) return;
+// void lysLeds() {
+//   if (valgtTid == 0) return;
 
-  int antallLys = 10;
+//   int antallLys = 10;
 
-  // Hvor stor andel av tiden har gått?
+//   int lysSomSkalLyse = (valgtTidMin-tidIgjenMin)*antallLys/valgtTidMin; 
+//   //lager en formel for å belyse en andel av lysene, basert på hvor langt tiden har gått
 
-  int lysSomSkalLyse = (valgtTidMin-tidIgjenMin)*antallLys/valgtTidMin;
-
-  for (int i = 0; i < antallLys; i++) {
-    if (i < lysSomSkalLyse) {
-      digitalWrite(ledPins[i], HIGH);
-    } else {
-      digitalWrite(ledPins[i], LOW);
-    }
-  }
-}
+//   for (int i = 0; i < antallLys; i++) {
+//     if (i < lysSomSkalLyse) { //dersom indeksen til Leden er mindre enn antallet som skal lyse, vil den lyse
+//       digitalWrite(ledPins[i], HIGH);
+//     } else {
+//       digitalWrite(ledPins[i], LOW);
+//     }
+//   }
+// }
  
  
  
@@ -338,7 +304,7 @@ void failedLys(){
       for (int i = 0; i < 5; i++) {
         analogWrite(fadeLeds[i], brightness);
       }
-      delay(10);
+      delay(100);
     }
     Serial.println("Blinker d eller?");
   }
