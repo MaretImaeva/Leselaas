@@ -69,8 +69,7 @@ void setup() {
  
   Serial.begin(9600);
  
-  int antallLys = 10;
-  for (int i = 0; i < antallLys; i++) {
+  for (int i = 0; i < antallLeds; i++) {
   pinMode(ledPins[i], OUTPUT); //angir alle LEDs som output
   }
  
@@ -84,7 +83,6 @@ void setup() {
   pinMode(buttonPluss, INPUT_PULLUP);
  
 }
-
 
 //-------
 
@@ -123,8 +121,6 @@ if (tidIgjenMin <= 0 && valgtTidMin > 0) {
 
   
   lysLeds(); //oppdaterer og sjekker progresjonen fortløpende, for å aktivere riktige LEDs
-
-
 
  
   // Sjekker og teller sist bevegelse:
@@ -178,15 +174,12 @@ void ferdig(){
  
   erFerdig = true;
  
-  for (int i = 0; i < 10; i++) {digitalWrite(ledPins[i], LOW); } 
+  skruAv(); //skrur alle leds av så det kan markeres at tiden er over
+ 
+  for (int i = 0; i < antallLeds; i++) digitalWrite(ledPins[i], HIGH);
+  delay(4800);
+  skruAv();
 
-  Serial.println("Intervallet ferdig! Starter avslutningseffekter");
-  //skrur alle leds av så det kan markeres at tiden er over
- 
-  for (int i = 0; i < 10; i++) digitalWrite(ledPins[i], HIGH);
-  delay(1000);
-  for (int i = 0; i < 10; i++) digitalWrite(ledPins[i], LOW);
- 
   victoryFanfare(); //kaller på ferdig melodi
   laas = false; //låsen åpnes
   valgtTid = tidIgjen = valgtTidMin = tidIgjenMin = 0; //nullstiller alle variabler fordi intervallet er ferdig, og da vil det ikke mikses med neste intervall
@@ -197,12 +190,10 @@ void ferdig(){
 void lysLeds() {
   if (valgtTid == 0) return;
 
-  int antallLys = 10;
-
   int lysSomSkalLyse = (valgtTidMin-tidIgjenMin)*antallLys/valgtTidMin; 
   //lager en formel for å belyse en andel av lysene, basert på hvor langt tiden har gått
 
-  for (int i = 0; i < antallLys; i++) {
+  for (int i = 0; i < antallLeds; i++) {
     if (i < lysSomSkalLyse) { //dersom indeksen til Leden er mindre enn antallet som skal lyse, vil den lyse
       digitalWrite(ledPins[i], HIGH);
     } else {
@@ -212,33 +203,43 @@ void lysLeds() {
 }
  
 
-void skruAV(){
-
-
-}
- 
- 
-void lysStart() {
- 
-  for (int i = 0; )
-}
- 
- 
- 
-void victoryFanfare() {
-  int melody[] = {nA4, nA4, nA4, nA4, F4, G4, nA4, G4, nA4};
-  int noteDurations[] = {200, 200, 200, 700, 700, 700, 400, 200, 1500};
- 
-  for (int i = 0; i < 9; i++) {
-    tone(hoytaler, melody[i], noteDurations[i]);
-    delay(noteDurations[i] + 20);
+void skruAV(){ //metode for å skru av alle led lysene
+  for (int i = antallLeds; i > 0; i--){
+    digitalWrite(ledPins[i], LOW);
+    delay(500);
   }
-  noTone(hoytaler);
+}
+ 
+ 
+void lysStart() { //metode for å gi visuell feedback til brukere
+ 
+  for (int i = 0; i < antallLeds; i++){
+    digitalWrite(ledPins[i], HIGH); //skrur seg på fra bunnen av
+    delay(500); //lite delay slik at de ikke skrur på samtidig, men heller "flyter" oppover
+  }
+
+  for (int i = 13; i > antallLeds; i--){
+    digitalWrite(ledPins[i], LOW); //samme som over, men nå skrus de av fra toppen av
+    delay(500);
+  }
+}
+ 
+ 
+ 
+void victoryFanfare() { //ferdig melodi
+  int melody[] = {nA4, nA4, nA4, nA4, F4, G4, nA4, G4, nA4}; //lagrer notene i en liste, i riktig rekkefølge (som de forekommer)
+  int noteDurations[] = {200, 200, 200, 700, 700, 700, 400, 200, 1500}; //her er antall ms notene varer
+ 
+  for (int i = 0; i < 9; i++) { //itererer (antall noter) ganger
+    tone(hoytaler, melody[i], noteDurations[i]); //høytaler spiller note, med tilsvarende varighet
+    delay(noteDurations[i] + 20); //lite mellomrom mellom hver
+  }
+  noTone(hoytaler); //forsikrer oss om at lyd outputen er null
   Serial.println("Burde ha spilt av musikk");
 }
 
  
-void lyd() {
+void lyd() { //enkel lyd for feedback
   tone(hoytaler, nA4, 200);
   delay(200);
   noTone(hoytaler);
@@ -246,8 +247,8 @@ void lyd() {
 }
  
  
-void failedLyd() {
-  int melody[] = {G4, G4, G4, Ds4};
+void failedLyd() { //lyd for feilet intervall (bruker var borte/inaktiv for lenge)
+  int melody[] = {G4, G4, G4, Ds4}; //samme logikk som victory fanfare
   int noteDurations[] = {200, 200, 200, 600};
  
   for (int i = 0; i < 4; i++) {
@@ -260,16 +261,16 @@ void failedLyd() {
  
  
 void failedLys(){
-    int fadeLeds[] = {3, 5, 6, 9, 10, 11};
+    int fadeLeds[] = {3, 5, 6, 9, 10, 11}; //alle pinene med ~, disse klarer å fade med lysene. Derfor benyttes de. Å ikke bruke alle lysene, er også hensiktmessig for å gjøre det lett for bruker å skille feedbacken
  
   for (int r = 0; r < 3; r++) { // blink 3 ganger
-    for (int brightness = 0; brightness <= 255; brightness += 5) {
+    for (int brightness = 0; brightness <= 255; brightness += 5) { //for hver iterasjon økes brightness
       for (int i = 0; i < 5; i++) {
         analogWrite(fadeLeds[i], brightness);
       }
       delay(10);
     }
-    for (int brightness = 255; brightness >= 0; brightness -= 5) {
+    for (int brightness = 255; brightness >= 0; brightness -= 5) { //for hver senkes brightness
       for (int i = 0; i < 5; i++) {
         analogWrite(fadeLeds[i], brightness);
       }
@@ -277,10 +278,8 @@ void failedLys(){
     }
     Serial.println("Skal blinke på led 5,6, 9, 10 og 11");
   }
- 
-  // Slå av LED-ene etterpå
   for (int i = 0; i < 5; i++) {
-    analogWrite(fadeLeds[i], 0);
+    analogWrite(fadeLeds[i], 0); //forsikre om at alle slås av
   }
 }
  
@@ -293,7 +292,7 @@ void sjekkBevegelse(){
     lastMotionTime = millis();  // oppdater siste tid bevegelse
   } else {
     // sjekk om det har gått 15 minutter uten bevegelse
-    if (millis() - lastMotionTime >= timeout) {
+    if (millis() - lastMotionTime >= timeout) { //timeout er definert over setup i koden (verdi av 15 minutter i ms)
       Serial.println("Ingen bevegelse på 15 minutter.");
       tidIgjen = valgtTid;   // tilbakestill tiden
       failedLyd();
